@@ -1,0 +1,15 @@
+{
+  "23": "user details to server",
+  "24": "server broadcast user joined",
+  "25": "server broadcast user leaved",
+  "26": "im ready to server",
+  "27": "user ready broadcast from server",
+  "28": "user playing",
+  "29": "user paused",
+  "30": "seeking start",
+  "31": "seeking end",
+  "32": "fetch current time",
+  "33": "send current time",
+  "34": "send broadcast message",
+  "35": "recv message"
+}
