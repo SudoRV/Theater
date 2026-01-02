@@ -1,1 +1,5 @@
 node_modules
+/videos
+localhost-cert.pem
+localhost-key.pem
+.env
