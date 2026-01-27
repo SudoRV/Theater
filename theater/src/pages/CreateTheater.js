@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { metadata } from "framer-motion/client";
+import { useStates } from "../services/states";
 
 export default function UploaderPage() {
   const [file, setFile] = useState(null);
@@ -9,6 +9,8 @@ export default function UploaderPage() {
   const [uploadType, setUploadType] = useState("upload");
   const [theatreName, setTheatreName] = useState("");
   const videoFileRef = useRef(HTMLInputElement);
+
+  const { my_details } = useStates();
 
   const host = window.location.hostname;
 
@@ -32,7 +34,9 @@ export default function UploaderPage() {
 
     const id = generateTheatreId();
     setTheatreId(id);
-    setJoinUrl(`${window.location.origin}/theater?type=${uploadType}&name=${theatreName}&id=${id}`);
+    setJoinUrl(`${window.location.origin}/join/theater?type=${uploadType}&name=${theatreName}&id=${id}&createdat=${Date.now()}`);
+
+    // setJoinUrl(`${window.location.origin}/join/theater?type=${uploadType}&name=${theatreName}&id=${id}`);
 
     if (uploadType === "upload") {
       console.log("Uploading file:", file);
@@ -41,6 +45,9 @@ export default function UploaderPage() {
       const formData = new FormData();
       formData.append("file", file); // must match multer field
       formData.append("theater_id", id);
+      formData.append("creator_name", my_details.name)
+      formData.append("creator_username", my_details.username)
+      formData.append("creator_email", my_details.email)
 
       try {
         const response = await fetch(`https://${host}:8000/theater/upload`, {
@@ -48,7 +55,8 @@ export default function UploaderPage() {
           body: formData
         });
         const result = await response.json();
-        localStorage.setItem("theater_data", JSON.stringify({upload_type: uploadType, video_file: result.file}));
+        // localStorage.setItem("theater_data", JSON.stringify({upload_type: uploadType, video_file: result.file}));
+        
         alert(result.message);
       } catch (err) {
         console.error(err);
@@ -57,7 +65,7 @@ export default function UploaderPage() {
 
     } else if (uploadType === "screenshare") {
       console.log("Screenshare option selected");
-      localStorage.setItem("theater_data", JSON.stringify({upload_type: uploadType}));
+      // localStorage.setItem("theater_data", JSON.stringify({upload_type: uploadType}));
     }
   };
 
@@ -157,7 +165,7 @@ export default function UploaderPage() {
                   Copy Link
                 </button>
                 <button
-                  onClick={() => window.open(joinUrl.replace("/join",""), "_blank")}
+                  onClick={() => window.open(joinUrl)}
                   className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
                 >
                   Open Theatre

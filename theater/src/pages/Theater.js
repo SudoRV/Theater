@@ -1,23 +1,32 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { Check, X, Send, Mic, MicOff, Volume2, VolumeX, CheckCircle, XCircle, ArrowBigDown } from "lucide-react";
-
-import VoiceChat from "../services/voiceChat";
 
 import Members from "../components/Members";
 import Video from "../components/Video";
 import { useStates } from "../services/states";
+import { useVoiceRoom } from "../services/useVoiveRoom";
+
 
 export default function Theater() {
+  const location = useLocation();
+  const { micEnabled, speakerEnabled } = location.state || {};
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
   const [ready, setReady] = useState(false);
-  const [micOn, setMicOn] = useState(false);
-  const [speakerOn, setSpeakerOn] = useState(false);
+  const [micOn, setMicOn] = useState(micEnabled || false);
+  const [speakerOn, setSpeakerOn] = useState(speakerEnabled || false);
   const [triggerArrow, setTriggerArrow] = useState(null);
   const permissionRef = useRef(null);
 
-  const { my_details, members, send, askPermission, setAskPermission, setPermissionGranted, message } = useStates();
+  const { my_details, members, send, askPermission, setAskPermission, setPermissionGranted, message, theaterData } = useStates();
+
+  const { connectSocket, toggleMic } = useVoiceRoom();
+  const socketConnectedRef = useRef(false);
+
+  const [audioGesture, setAudioGesture] = useState(null)
 
   const searchParams = new URLSearchParams(window.location.search);
   const uploadType = searchParams.get("type");
@@ -32,6 +41,8 @@ export default function Theater() {
 
   // load messages
   useEffect(() => {
+    if(!theaterData?.theater_id || !my_details.email) return;
+    
     const msgData = window.localStorage.getItem("messages");
     const loaded_messages = msgData ? JSON.parse(msgData) : {};
 
@@ -42,8 +53,13 @@ export default function Theater() {
     } else {
       setMessages(loaded_messages.messages)
     }
-  }, [])
 
+    if(socketConnectedRef.current === false){
+      console.log('connecting to voice room socket')
+      connectSocket({name: my_details.name, email: my_details.email, roomId: theaterData.theater_id, micEnabled, speakerEnabled})
+      socketConnectedRef.current = true;
+    }
+  }, [my_details?.email, theaterData?.theater_id])
 
   useEffect(() => {
     saveMessages();
@@ -106,6 +122,9 @@ export default function Theater() {
     setAskPermission(askPermission);
   }, [askPermission, setAskPermission]);
 
+
+  // voice room logic
+
   return (
     <div className="h-full grid grid-cols-4 grid-rows-[1fr_auto_auto] gap-2 p-2 text-white overflow-hidden     bg-gradient-to-b from-gray-900 via-zinc-900 to-black">
 
@@ -115,7 +134,7 @@ export default function Theater() {
           {/* Messages */}
           <div id="audio-temp" className="flex-1 overflow-y-auto mb-2 space-y-2 flex-grow">
 
-          <VoiceChat micOn={micOn} speakerOn={speakerOn} />
+          {/* <VoiceChat micOn={micOn} speakerOn={speakerOn} /> */}
             
             {messages.map((msg, i) => (
               <div key={i} className={
@@ -195,14 +214,23 @@ export default function Theater() {
           </button>
 
           <button
-            onClick={() => setMicOn(!micOn)}
+            onClick={() => {
+              setMicOn(!micOn);
+              toggleMic(!micOn);
+            }}
             className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-600 flex items-center gap-2"
           >
             {micOn ? <Mic size={24} /> : <MicOff size={24} />}
           </button>
 
           <button
-            onClick={() => setSpeakerOn(!speakerOn)}
+            onClick={() => {
+              setSpeakerOn(!speakerOn);
+              const remoteAudios = document.querySelectorAll("audio[type='remote']");
+              remoteAudios.forEach((audio)=>{
+                !speakerOn ? audio.play() : audio.pause();
+              })
+            }}
             className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-600 flex items-center gap-2"
           >
             {speakerOn ? <Volume2 size={24} /> : <VolumeX size={24} />}
@@ -212,12 +240,20 @@ export default function Theater() {
       </div>
 
       {/* Video Section */}
-      <div className="col-span-4 md:col-span-3 row-span-1 flex flex-col items-center justify-center bg-gray-900/60 rounded-xl relative p-2 overflow-hidden">
+      <div className="col-span-4 md:col-span-3 row-span-1 flex flex-col items-center justify-center bg-gray-900/90 rounded-xl relative p-2 overflow-hidden">
+
+        <div className="w-full pb-2 px-2 flex gap-3">
+          <p>Theater : {theaterData?.theater_name}</p>
+          <p className="text-slate-400">ID : {theaterData?.theater_id}</p>
+          <p className="text-slate-400">Creator : {theaterData?.creator_name}</p>
+          <p className="text-slate-400">Created At : {new Date(Number(theaterData?.created_at)).toLocaleString()}</p>
+        </div>
+
         <Video />
       </div>
 
       {/* Joined Clients */}
-      <div className="col-span-4 md:col-span-3 row-span-2 bg-gray-900/60 p-2 rounded-xl">
+      <div className="relative col-span-4 md:col-span-3 row-span-2 bg-gray-900/60 p-2 rounded-xl">    
         <Members />
       </div>
 

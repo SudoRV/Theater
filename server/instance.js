@@ -6,7 +6,9 @@ const multer = require("multer");
 const cors = require("cors");
 const https = require("https");
 
-const sfu = require("./sfu");
+const { Server } = require("socket.io");
+const { createWorker } = require("./voice_room/mediasoup.js");
+const { socketHandler } = require("./voice_room/sfu");
 
 
 const options = {
@@ -18,6 +20,22 @@ const port = 8000;
 const app = express();
 const server = https.createServer(options, app);
 const wsApp = expressWs(app, server)
+
+// create voice room logic
+const voiceRoomServer = https.createServer(options, app);
+const io = new Server(voiceRoomServer, {
+  path: "/voice_room",
+  cors: {
+    origin: "*",
+  },
+});
+
+async function VoiceRoom() {
+  await createWorker();
+  socketHandler(io);
+}
+
+VoiceRoom();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json())
@@ -38,13 +56,13 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     // Get original name without extension
     const nameWithoutExt = path.parse(file.originalname).name;
-    
+
     // Get file extension
     const ext = path.extname(file.originalname);
-    
+
     // Create new filename: originalName_theaterId_timestamp.extension
     const filename = `${nameWithoutExt}_${Date.now()}${ext}`;
-    
+
     cb(null, filename);
   }
 });
@@ -78,42 +96,50 @@ app.get('/theater/video', (req, res) => {
 
 })
 
-app.post("/get-theater-data", (req, res)=>{
+app.post("/get-theater-data", (req, res) => {
   const body = req.body;
   const theater_id = body.theater_id;
 
-  fs.readdir("./videos", (err, files)=>{
-    if(err){
+  fs.readdir("./videos", (err, files) => {
+    if (err) {
       console.log("Error reading folder: ", err);
-      res.json({success: false,message: "No file found for the theater"});
+      res.json({ success: false, message: "No file found for the theater" });
       return;
     }
 
     files.forEach(file => {
       const filePath = path.join("./videos", file);
-      if(fs.statSync(filePath).isFile() && file.includes(theater_id)){
-        const created_at = file.split(".")[0].split("_")[2];
-        
-        res.json({success: true, message: "file found for the theater", theater_id: theater_id, created_at: created_at, filename: file});
+      if (fs.statSync(filePath).isFile() && file.includes(theater_id)) {
+        const fileData = path.basename(file).split("___");
+        const creator_name = fileData[2]
+        const creator_username = fileData[3]
+        const creator_email = fileData[4]
+        const created_at = fileData[5].split(".")[0];
+
+        // console.log(created_at)
+
+        res.json({ success: true, message: "file found for the theater", metadata: { theater_id: theater_id, created_at: created_at, filename: fileData[0] + path.extname(file), file, creator_name, creator_username, creator_email } });
       }
     })
   })
 })
 
-app.post("/theater/upload",uploadVideo.single("file"), (req, res) => {
+app.post("/theater/upload", uploadVideo.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
 
   const oldPath = req.file.path;
   const theaterId = req.body.theater_id;
+
   const nameWithoutExt = path.parse(req.file.originalname).name;
   const ext = path.extname(req.file.originalname);
-  const newFilename = `${nameWithoutExt}_${theaterId}_${Date.now()}${ext}`;
+
+  const newFilename = `${nameWithoutExt}___${theaterId}___${req.body.creator_name}___${req.body.creator_username}___${req.body.creator_email}___${Date.now()}${ext}`;
   const newPath = path.join(videoUploadFolder, newFilename);
 
   fs.renameSync(oldPath, newPath);
-  res.json({status: "success", message:`File uploaded successfully: ${newFilename}`, file: newFilename});
+  res.json({ status: "success", message: `File uploaded successfully: ${newFilename}`, file: newFilename });
 })
 
 
@@ -122,107 +148,181 @@ app.post("/theater/upload",uploadVideo.single("file"), (req, res) => {
 
 // socket and connection
 
-const clients = new Set();
-const members = new Set();
-const readyMembers = new Set();
+// theaterId => { clients, members, readyMembers }
+const theaters = new Map();
+
+function getTheater(theaterId) {
+  if (!theaters.has(theaterId)) {
+    theaters.set(theaterId, {
+      clients: new Set(),
+      members: new Set(),
+      readyMembers: new Set(),
+    });
+  }
+  return theaters.get(theaterId);
+}
+
 
 app.ws("/controls", (ws, req) => {
   const ip = req.connection.remoteAddress;
-  console.log(ip)
+  const theaterId = req.query.theaterId; // ?theaterId=abc123
 
-  // Handle incoming messages
+  if (!theaterId) {
+    console.log("no theater id found")
+    ws.close(1008, "theaterId required");
+    return;
+  }
+
+  ws.theaterId = theaterId;
+  console.log(ip, "connected to theater:", theaterId);
+
+  const theater = getTheater(theaterId);
+
   ws.on("message", (message) => {
     let data;
     try {
       data = JSON.parse(message.toString());
-    } catch (err) {
-      console.error("Invalid JSON received:", message);
+    } catch {
+      console.error("Invalid JSON received");
       return;
     }
 
-    if (data.code == 23) {
-      members.add(data.payload.user_details);
+    if (data.code === 23) {
+      const user = data.payload.user_details;
 
-      // Add to clients with ws binding
-      const email = data.payload.user_details.email;
-      clients.add({ ws, email });
+      theater.members.add(user);
+      theater.clients.add({ ws, email: user.email });
 
-      // updating users for new user and updated members set
-      broadcast({ command: "new user joined", code: 24, user: data.payload.user_details, payload:{"members": Array.from(members), "ready_members": Array.from(readyMembers)} })
-    }else if(data.code == 26){
-      if(data.command.includes("im ready")){
-        readyMembers.add(data.user);
-      }else{
-        const readyMember = Array.from(readyMembers).find(r => r.email == data.user.email);
-        readyMembers.delete(readyMember);
+      broadcast(theaterId, {
+        command: "new user joined",
+        code: 24,
+        user,
+        payload: {
+          members: Array.from(theater.members),
+          ready_members: Array.from(theater.readyMembers),
+        },
+      });
+    }
+
+    else if (data.code === 26) {
+      if (data.command.includes("im ready")) {
+        theater.readyMembers.add(data.user);
+      } else {
+        const rm = [...theater.readyMembers].find(
+          r => r.email === data.user.email
+        );
+        if (rm) theater.readyMembers.delete(rm);
       }
 
-      const command = { command: "user ready", code: 27, user: data.user, payload:{"ready_members": Array.from(readyMembers)}}
-      broadcast(command);
+      broadcast(theaterId, {
+        command: "user ready",
+        code: 27,
+        user: data.user,
+        payload: {
+          ready_members: Array.from(theater.readyMembers),
+        },
+      });
     }
+
     else {
-      handleMessage(ws, data)
+      handleMessage(ws, data);
     }
   });
 
-  // Handle disconnection
-  ws.on("close", () => handleDisconnect(ws, req));
+  ws.on("close", () => handleDisconnect(ws));
   ws.on("error", (err) => console.error("WS error:", err));
-})
+});
+
 
 // ----------- Helper Functions -----------
-
 function handleMessage(ws, data) {
+  const theater = theaters.get(ws.theaterId);
+  if (!theater) return;
+
   switch (data?.send_type) {
     case "all":
-      broadcast(data);
+      broadcast(ws.theaterId, data);
       break;
+
     case "all-except-me":
-      broadcastExcept(ws, data);
+      broadcastExcept(ws, ws.theaterId, data);
       break;
+
     case "one":
-      Array.from(clients).find(c=>c.email == data.user.email).ws.send(JSON.stringify(data));
-      // Array.from(clients).filter(c=>c.email == data.user.email)[0].ws.send(data);
+      const target = [...theater.clients]
+        .find(c => c.email === data.user.email);
+      if (target?.ws?.readyState === 1) {
+        target.ws.send(JSON.stringify(data));
+      }
       break;
-    default:
-      console.warn("default :", data.send_type);
   }
 }
 
-function handleDisconnect(ws, req) {
-  console.log("client discconnected");
-  const client = Array.from(clients).find(c => c.ws == ws);
-  clients.delete(client);
 
-  const member = Array.from(members).find(m => m.email == client.email);
-  const ready_member = Array.from(readyMembers).find(rm => rm.email == client.email);
+function handleDisconnect(ws) {
+  const theaterId = ws.theaterId;
+  const theater = theaters.get(theaterId);
+  if (!theater) return;
 
-  members.delete(member);
-  readyMembers.delete(ready_member);
+  console.log("client disconnected from", theaterId);
 
-  // broadcast client leaved
-  const command = {command: "user leaved", code: 25,user: member, payload:{"members": Array.from(members), ready_members: Array.from(readyMembers)}};
-  broadcast(command);
+  const client = [...theater.clients].find(c => c.ws === ws);
+  if (!client) return;
+
+  theater.clients.delete(client);
+
+  const member = [...theater.members]
+    .find(m => m.email === client.email);
+  const ready = [...theater.readyMembers]
+    .find(r => r.email === client.email);
+
+  if (member) theater.members.delete(member);
+  if (ready) theater.readyMembers.delete(ready);
+
+  broadcast(theaterId, {
+    command: "user leaved",
+    code: 25,
+    user: member,
+    payload: {
+      members: Array.from(theater.members),
+      ready_members: Array.from(theater.readyMembers),
+    },
+  });
+
+  // cleanup empty theater
+  if (theater.clients.size === 0) {
+    theaters.delete(theaterId);
+  }
 }
 
-function broadcast(data) {
-  const strData = JSON.stringify(data);
-  clients.forEach((client) => {
-    if (client.ws.readyState === client.ws.OPEN) client.ws.send(strData);
+
+function broadcast(theaterId, data) {
+  const theater = theaters.get(theaterId);
+  if (!theater) return;
+
+  const str = JSON.stringify(data);
+  theater.clients.forEach(c => {
+    if (c.ws.readyState === 1) c.ws.send(str);
   });
 }
 
-function broadcastExcept(ws, data) {
-  const strData = JSON.stringify(data);
-  clients.forEach((client) => {
-    if (client.ws !== ws && client.ws.readyState === client.ws.OPEN){
-      client.ws.send(strData);
-    } 
+function broadcastExcept(ws, theaterId, data) {
+  const theater = theaters.get(theaterId);
+  if (!theater) return;
+
+  const str = JSON.stringify(data);
+  theater.clients.forEach(c => {
+    if (c.ws !== ws && c.ws.readyState === 1) {
+      c.ws.send(str);
+    }
   });
 }
-
 
 
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+voiceRoomServer.listen(8001, () => {
+  console.log(`voice room server is running on port ${port}`);
+})

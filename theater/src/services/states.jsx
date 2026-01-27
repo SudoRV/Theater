@@ -18,13 +18,14 @@ export const StatesProvider = ({ children }) => {
     const [videoData, setVideoData] = useState({});
     const [message, setMessage] = useState("");
 
+    const [theaterData, setTheaterData] = useState();
+
     const my_details = JSON.parse(localStorage.getItem("my_details")) || {
         name: "Rahul Verma",
         username: "rahul1992verma",
         email: "rahulverma.1.2005@gmail.com",
         gender: "male"
     };
-
 
     const msgFormat = {
         "code": 1001,
@@ -40,13 +41,85 @@ export const StatesProvider = ({ children }) => {
     }
 
 
+    // voice room states
+    /* ======================
+     DATA (reactive)
+  ====================== */
+    const [remoteUsers, setRemoteUsers] = useState([]);
+    const [remoteStreams, setRemoteStreams] = useState({});
+    const [localAudioRef, setLocalAudioRef] = useState(null);
+
+    const [userType, setUserType] = useState({})
+
+    /* ======================
+       USER ACTIONS
+    ====================== */
+    const addRemoteUser = (user) => {
+        setRemoteUsers((prev) => {
+            const exists = prev.some((u) => u.userId === user.userId);
+            if (exists) return prev;
+            return [...prev, user];
+        });
+    };
+
+    const removeRemoteUser = (userId) => {
+        setRemoteUsers((prev) =>
+            prev.filter((u) => u.userId !== userId)
+        );
+
+        setRemoteStreams((prev) => {
+            const updated = { ...prev };
+            delete updated[userId];
+            return updated;
+        });
+    };
+
+    /* ======================
+       AUDIO STREAM ACTIONS
+    ====================== */
+    const setRemoteStream = (userId, stream) => {
+        setRemoteStreams((prev) => ({
+            ...prev,
+            [userId]: stream,
+        }));
+    };
+
+    const clearAll = () => {
+        setRemoteUsers([]);
+        setRemoteStreams({});
+    };
+
+    // ========================================
+
+
     // socket
     const socketRef = useRef(null);
     const listenerRef = useRef(null);
 
+    async function setTheaterDataFunc(host, params, theater_id) {
+        const response = await fetch(`https://${host}:8000/get-theater-data`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ theater_id: theater_id })
+        })
+
+        const data = await response.json();
+
+        setTheaterData(prev => ({ ...prev, theater_name: params.get("name"), source_type: params.get("type"), ...data.metadata }));
+    }
+
     useEffect(() => {
         const host = window.location.hostname;
-        const socketUrl = `wss://${host}:8000/controls`;
+        // loadd theater data
+        const params = new URLSearchParams(window.location.search)
+        const theater_id = params.get("id")
+
+        setTheaterDataFunc(host, params, theater_id);
+
+        // connect to socket controls
+        const socketUrl = `wss://${host}:8000/controls?theaterId=${params.get("id")}`;
 
         if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
             socketRef.current = new WebSocket(socketUrl);
@@ -80,8 +153,8 @@ export const StatesProvider = ({ children }) => {
                 // console.log(data);
 
                 switch (data.code) {
-                    case 24: //user joined brpadcast from server
-                        setMembers(data?.payload?.members);
+                    case 24: //user joined broadcast from server
+                        setMembers(data?.payload?.members.map(m => ({...m, mic: true})));
                         setReadyMembers(data.payload.ready_members);
                         setMembers(prevMembers =>
                             prevMembers.map(m => ({
@@ -140,12 +213,12 @@ export const StatesProvider = ({ children }) => {
 
                     case 33: //get current time from already joined members         
                         setRequestCurrentTime(data.payload.current_time);
-                        break;  
+                        break;
 
                     case 34: //receive message from users        
                         console.log(data);
-                        setMessage({name: data.user.name, email: data.user.email, message: data.payload.message});
-                        break;       
+                        setMessage({ name: data.user.name, email: data.user.email, message: data.payload.message });
+                        break;
 
                     default:
                         console.log("default", data);
@@ -159,14 +232,14 @@ export const StatesProvider = ({ children }) => {
 
             // return () => {
             //     // Cleanup listeners
-            //     socketRef.cuurent.removeEventListener("open", handleOpen);
-            //     socket.removeEventListener("message", handleMessage);
-            //     socket.removeEventListener("close", handleClose);
-            //     socket.removeEventListener("error", handleError);
+            //     // socketRef.cuurent.removeEventListener("open", handleOpen);
+            //     // socket.removeEventListener("message", handleMessage);
+            //     // socket.removeEventListener("close", handleClose);
+            //     // socket.removeEventListener("error", handleError);
 
             //     // Close the socket
-            //     if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-            //         socket.close();
+            //     if (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING) {
+            //         socketRef.current.close();
             //     }
             // };
         }
@@ -204,6 +277,7 @@ export const StatesProvider = ({ children }) => {
     const value = {
         myIp, setMyIp,
         my_details,
+        theaterData, setTheaterData,
         readyMembers, setReadyMembers,
         members, setMembers,
         video, setVideo,
@@ -218,7 +292,23 @@ export const StatesProvider = ({ children }) => {
         permissionGranted, setPermissionGranted,
         requestCurrentTime, setRequestCurrentTime,
         formatTime, videoData,
-        message
+        message,
+
+        // voice room global states export 
+        // data
+        remoteUsers,
+        remoteStreams,
+        userType, setUserType,
+
+        // ref
+        localAudioRef,
+        setLocalAudioRef,
+
+        // actions
+        addRemoteUser,
+        removeRemoteUser,
+        setRemoteStream,
+        clearAll,
     };
 
     return (

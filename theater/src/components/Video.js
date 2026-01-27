@@ -3,31 +3,20 @@ import { useStates } from "../services/states";
 
 export default function Video() {
 
-  const { send, my_details, members, readyMembers, playRequested, setVideo, currentTime, setCurrentTime, syncing, setSyncing, askPermission, setAskPermission, permissionGranted, setPermissionGranted, requestCurrentTime, setRequestCurrentTime, formatTime } = useStates();
+  const { send, my_details, members, readyMembers, playRequested, setVideo, currentTime, setCurrentTime, syncing, setSyncing, askPermission, setAskPermission, permissionGranted, setPermissionGranted, requestCurrentTime, setRequestCurrentTime, formatTime, theaterData, setTheaterData } = useStates();
+
   const videoRef = useRef(null);
   const [dragSeeking, setDragSeeking] = useState(false);
   const [fetchingTime, setFetchingTime] = useState(null);
 
   const host = window.location.hostname;
 
-
   async function setVideoFile() {
-    const searchParams = new URLSearchParams(window.location.search);
-    const uploadType = searchParams.get("type");
-    const theaterName = searchParams.get("name");
-    const theater_id = searchParams.get("id");
+    if (!theaterData?.theater_id) return;
 
-    const response = await fetch(`https://${host}:8000/get-theater-data`,{
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({theater_id: theater_id})
-    })
-
-    const data = await response.json();
-    const filename = data.filename;
-
+    // console.log(theaterData)
+    const uploadType = theaterData.source_type;
+    const filename = theaterData.file;
 
     if (uploadType === "upload") {
       videoRef.current.src = `https://${host}:8000/theater/video?file=${filename}`;
@@ -37,7 +26,7 @@ export default function Video() {
 
   useEffect(() => {
     setVideoFile();
-  }, [])
+  }, [theaterData])
 
   const fetchingTimeout = setTimeout(() => {
     setFetchingTime(false);
@@ -175,7 +164,7 @@ export default function Video() {
   }, [permissionGranted, my_details, readyMembers, members])
 
   return (
-    <video ref={videoRef} style={{ height: "100%" }} className="flex-grow rounded-lg" controls>
+    <video ref={videoRef} style={{ height: "100%" }} className="flex-grow rounded-lg bg-black" controls>
       <source src={`https://${host}:8000/theater/video`} type="video/mp4" />
     </video>
   )
