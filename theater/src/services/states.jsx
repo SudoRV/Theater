@@ -96,7 +96,7 @@ export const StatesProvider = ({ children }) => {
     const listenerRef = useRef(null);
 
     async function setTheaterDataFunc(host, params, theater_id) {
-        const response = await fetch(`https://${host}:8000/get-theater-data`, {
+        const response = await fetch(`http://${host}:8000/get-theater-data`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -117,7 +117,7 @@ export const StatesProvider = ({ children }) => {
         setTheaterDataFunc(host, params, theater_id);
 
         // connect to socket controls
-        const socketUrl = `wss://${host}:8000/controls?theaterId=${params.get("id")}`;
+        const socketUrl = `ws://${host}:8000/controls?theaterId=${params.get("id")}`;
 
         if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
             socketRef.current = new WebSocket(socketUrl);
@@ -214,7 +214,6 @@ export const StatesProvider = ({ children }) => {
                         break;
 
                     case 34: //receive message from users        
-                        console.log(data);
                         setMessage({ name: data.user.name, email: data.user.email, message: data.payload.message });
                         break;
 

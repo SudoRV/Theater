@@ -12,12 +12,11 @@ export default function Video() {
   async function setVideoFile() {
     if (!theaterData?.theater_id) return;
 
-    console.log(theaterData)
     const source = theaterData.source_type;
     const filename = theaterData.file;
 
     if (source === "upload") {
-      videoRef.current.src = `https://${host}:8000/theater/video?file=${filename}`;
+      videoRef.current.src = `http://${host}:8000/theater/video?file=${filename}`;
     }
     videoRef.current.load();
   }
@@ -163,7 +162,7 @@ export default function Video() {
 
   return (
     <video ref={videoRef} style={{ height: "100%" }} className="flex-grow rounded-lg bg-black" controls>
-      <source src={`https://${host}:8000/theater/video`} type="video/mp4" />
+      <source src={`http://${host}:8000/theater/video`} type="video/mp4" />
     </video>
   )
 }

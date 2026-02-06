@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require("path");
 const multer = require("multer");
 const cors = require("cors");
-const https = require("https");
+const http = require("http");
 
 const { Server } = require("socket.io");
 const { createWorker } = require("./voice_room/mediasoup.js");
@@ -18,11 +18,11 @@ const options = {
 
 const port = 8000;
 const app = express();
-const server = https.createServer(options, app);
+const server = http.createServer(app);
 const wsApp = expressWs(app, server)
 
 // create voice room logic
-const voiceRoomServer = https.createServer(options, app);
+const voiceRoomServer = http.createServer(options, app);
 const io = new Server(voiceRoomServer, {
   path: "/voice_room",
   cors: {
@@ -69,16 +69,13 @@ const storage = multer.diskStorage({
 
 const uploadVideo = multer({ storage: storage });
 
-
 // stream video 
 app.get('/theater/video', (req, res) => {
   const filename = req.query.file;
   const videoPath = filename ? path.join(__dirname, `./videos/${filename}`) : path.join(__dirname, './videos/finding-her.mp4');
 
   const filesize = fs.statSync(videoPath).size;
-
   const [start, end] = req.headers.range.replace("bytes=", "").split("-").map((elt) => elt == "" || elt == undefined ? filesize - 1 : parseInt(elt, 10));
-
   const chunksize = (end - start) + 1;
 
   res.status(206).header(
@@ -91,9 +88,7 @@ app.get('/theater/video', (req, res) => {
   );
 
   const file = fs.createReadStream(videoPath, { start, end })
-
   file.pipe(res)
-
 })
 
 app.post("/get-theater-data", (req, res) => {
@@ -117,8 +112,6 @@ app.post("/get-theater-data", (req, res) => {
         const theater_name = fileData[5];
         const source = fileData[6];
         const created_at = fileData[7].split(".")[0];
-
-        // console.log(created_at)
 
         res.json({ success: true, message: "file found for the theater", metadata: { theater_id: theater_id, created_at: created_at, filename: fileData[0] + path.extname(file), file, creator_name, creator_username, creator_email, theater_name, source } });
       }
@@ -150,10 +143,7 @@ app.post("/theater/upload", uploadVideo.single("file"), async (req, res) => {
 
 
 
-
-
 // socket and connection
-
 // theaterId => { clients, members, readyMembers }
 const theaters = new Map();
 

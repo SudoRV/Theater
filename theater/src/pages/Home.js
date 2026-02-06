@@ -62,7 +62,7 @@ const Home = () => {
     setJoining(true);
 
     try {
-      const res = await fetch(`https://${host}:8000/get-theater-data`, {
+      const res = await fetch(`http://${host}:8000/get-theater-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ theater_id: theaterId }),
@@ -95,7 +95,7 @@ const Home = () => {
   return (
     <div className="min-h-screen flex flex-col bg-neutral-950 text-white">
       {/* HERO */}
-      <section className="flex flex-col items-center justify-center flex-1 text-center px-6">
+      <section className="flex flex-col items-center justify-center flex-1 text-center px-6 p-4">
         <h1 className="text-5xl font-bold mb-4">Theater</h1>
         <p className="text-neutral-400 max-w-xl mb-8">
           Watch together. Listen together. Talk together.  

@@ -70,11 +70,9 @@ export default function Members() {
                                             onClick={() => {
                                                 const audio = document.querySelector(`audio[id="${c?.email}"]`);
 
-                                                console.log(audio)
                                                 if (!audio) return;
 
                                                 if (!audio.paused) {
-                                                    console.log("pasuing audio")
                                                     audio.pause();
 
                                                     setClients(prev =>
@@ -94,7 +92,6 @@ export default function Members() {
                                             onClick={() => {
                                                 const audio = document.querySelector(`audio[id="${c?.email}"]`);
 
-                                                console.log(audio)
                                                 if (!audio) return;
 
                                                 if (audio.paused) {

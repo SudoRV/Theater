@@ -41,7 +41,7 @@ export function useVoiceRoom() {
     function initSocket() {
         if (socketRef.current) return socketRef.current;
 
-        socketRef.current = io(`https://${host}:8001`, {
+        socketRef.current = io(`http://${host}:8001`, {
             path: "/voice_room",
             transports: ["websocket"],
             autoConnect: false,
@@ -286,10 +286,10 @@ export function useVoiceRoom() {
             source.start(0);
 
             await ctx.resume();
-            console.log("🔓 Audio unlocked");
+            // console.log("🔓 Audio unlocked");
             return true;
         } catch (error) {
-            console.log("🔓 Audio unlocked Fialed");
+            // console.log("🔓 Audio unlocked Fialed");
             return false;
         }
     }
@@ -342,11 +342,11 @@ export function useVoiceRoom() {
                         const bitrate =
                             lastBytes > 0 ? ((bytes - lastBytes) * 8) / 1000 : 0;
 
-                        console.log(
-                            `🎙️ AUDIO IN | bytes=${bytes} | packets=${packets} | bitrate=${bitrate.toFixed(
-                                1
-                            )} kbps`
-                        );
+                        // console.log(
+                        //     `🎙️ AUDIO IN | bytes=${bytes} | packets=${packets} | bitrate=${bitrate.toFixed(
+                        //         1
+                        //     )} kbps`
+                        // );
 
                         lastBytes = bytes;
                     }
