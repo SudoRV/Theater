@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useStates } from "../services/states";
 
 const Home = () => {
   const [openJoin, setOpenJoin] = useState(false);
   const [theaterId, setTheaterId] = useState("");
   const [joining, setJoining] = useState(false);
+
+  const { host } = useStates();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,7 +62,7 @@ const Home = () => {
     setJoining(true);
 
     try {
-      const res = await fetch("/get-theater-data", {
+      const res = await fetch(`https://${host}:8000/get-theater-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ theater_id: theaterId }),
@@ -73,13 +76,13 @@ const Home = () => {
       }
 
       const meta = data.metadata || {};
-      const name = meta.filename || "-";
-      const type = "upload";
+      const name = meta.theater_name || "-";
+      const type = meta.source;
       const createdAt = meta.created_at || Date.now();
 
-      const joinUrl = `/join/theater?type=${type}&name=${encodeURIComponent(
+      const joinUrl = `/join/theater?name=${encodeURIComponent(
         name
-      )}&id=${theaterId}&createdat=${createdAt}`;
+      )}&id=${theaterId}&type=${type}&createdat=${createdAt}`;
 
       window.location.href = joinUrl;
     } catch (err) {

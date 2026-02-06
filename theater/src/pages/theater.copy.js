@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { Check, X, Send, Mic, MicOff, Volume2, VolumeX, CheckCircle, XCircle, ArrowBigDown, MessageSquare, Info } from "lucide-react";
+import { Check, X, Send, Mic, MicOff, Volume2, VolumeX, CheckCircle, XCircle, ArrowBigDown } from "lucide-react";
 
 import Members from "../components/Members";
 import Video from "../components/Video";
@@ -14,8 +14,7 @@ export default function Theater() {
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [chatOpen, setChatOpen] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [micOn, setMicOn] = useState(micEnabled || false);
   const [speakerOn, setSpeakerOn] = useState(speakerEnabled || false);
@@ -40,8 +39,8 @@ export default function Theater() {
 
   // load messages
   useEffect(() => {
-    if (!theaterData?.theater_id || !my_details.email) return;
-
+    if(!theaterData?.theater_id || !my_details.email) return;
+    
     const msgData = window.localStorage.getItem("messages");
     const loaded_messages = msgData ? JSON.parse(msgData) : {};
 
@@ -53,9 +52,9 @@ export default function Theater() {
       setMessages(loaded_messages.messages)
     }
 
-    if (socketConnectedRef.current === false) {
+    if(socketConnectedRef.current === false){
       console.log('connecting to voice room socket')
-      connectSocket({ name: my_details.name, email: my_details.email, roomId: theaterData.theater_id, micEnabled, speakerEnabled })
+      connectSocket({name: my_details.name, email: my_details.email, roomId: theaterData.theater_id, micEnabled, speakerEnabled})
       socketConnectedRef.current = true;
     }
   }, [my_details?.email, theaterData?.theater_id])
@@ -127,34 +126,14 @@ export default function Theater() {
   return (
     <div className="h-full grid grid-cols-[320px_1fr] grid-rows-[1fr_auto_auto] gap-2 p-2 text-white overflow-hidden bg-neutral-950">
 
-      <button
-        onClick={() => setChatOpen(!chatOpen)}
-        className="
-          absolute top-3 left-3 z-10
-          p-2 rounded-lg
-          bg-neutral-900/80 backdrop-blur
-          hover:bg-neutral-800
-          active:scale-95
-          transition-all
-          border border-neutral-700
-        "
-      >
-        {chatOpen ? (
-          <X size={20} className="text-red-400" />
-        ) : (
-          <MessageSquare size={20} className="text-blue-400" />
-        )}
-      </button>
-
       {/* Chat Section */}
-      <div className={`${chatOpen ? "block" : "hidden"} row-span-1 flex flex-col bg-neutral-900/60 rounded-xl h-full overflow-hidden pt-10`}>
-
+      <div className={`${chatOpen ? "block" : "!hidden"} row-span-1 flex flex-col bg-neutral-900/60 rounded-xl h-full overflow-hidden`}>
         <div className="flex flex-col flex-1 p-2 h-full overflow-hidden">
           {/* Messages */}
           <div id="audio-temp" className="flex-1 overflow-y-auto mb-2 space-y-2 flex-grow">
 
-            {/* <VoiceChat micOn={micOn} speakerOn={speakerOn} /> */}
-
+          {/* <VoiceChat micOn={micOn} speakerOn={speakerOn} /> */}
+            
             {messages.map((msg, i) => (
               <div key={i} className={
                 `p-2 px-3 pt-1 rounded-lg bg-neutral-800 w-fit max-w-[80%] break-words ${msg.email === my_details.email ? "ml-auto" : ""}`
@@ -176,34 +155,14 @@ export default function Theater() {
 
           {/* Input */}
           <div className="w-full flex gap-4">
-            <textarea
-              rows={1}
+            <input
+              type="text"
+              className="flex-1 p-2 px-3 text-sm rounded-lg bg-neutral-950 border border-neutral-800 text-white focus:outline-none"
               value={input}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Type a message..."
-              onChange={(e) => {
-                setInput(e.target.value);
-                e.target.style.height = "auto";
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              className="
-                flex-1 p-2 px-3 text-sm
-                rounded-lg bg-neutral-950
-                border border-neutral-800
-                text-white focus:outline-none
-                resize-none
-                h-10
-                max-h-32
-                overflow-y-auto
-              "
             />
-            
-            <button onClick={handleSend} className="flex-grow flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 transition-background duration-300 rounded hover:bg-blue-500 max-w-[80px] h-10 text-sm">
+            <button onClick={handleSend} className="flex-grow flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 rounded hover:bg-blue-500 max-w-[80px] text-sm">
               <Send size={16} /> Send
             </button>
           </div>
@@ -266,7 +225,7 @@ export default function Theater() {
             onClick={() => {
               setSpeakerOn(!speakerOn);
               const remoteAudios = document.querySelectorAll("audio[type='remote']");
-              remoteAudios.forEach((audio) => {
+              remoteAudios.forEach((audio)=>{
                 !speakerOn ? audio.play() : audio.pause();
               })
             }}
@@ -279,120 +238,22 @@ export default function Theater() {
       </div>
 
       {/* Video Section */}
-      <div className={`${chatOpen ? "col-span-1" : "col-span-2 px-12"} row-span-1 flex flex-col items-center justify-center bg-neutral-900/60 rounded-xl relative p-2 2xl:py-6 overflow-hidden`}>
+      <div className="col-span-1 row-span-1 flex flex-col items-center justify-center bg-neutral-900/60 rounded-xl relative p-2 2xl:py-6 overflow-hidden">
 
-        <div className="w-full pb-2 px-2 flex justify-end items-center gap-3">
-          <p className="text-lg font-semibold">
-            {theaterData?.theater_name}
-          </p>
-
-          <button
-            onClick={() => setShowInfo(true)}
-            className="
-              p-1 rounded-full
-              bg-neutral-800 hover:bg-neutral-700
-              transition
-            "
-            title="Theater details"
-          >
-            <Info size={16} />
-          </button>
+        <div className="w-full pb-2 px-2 flex gap-3">
+          <p>Theater : {theaterData?.theater_name}</p>
+          <p className="text-slate-400">ID : {theaterData?.theater_id}</p>
+          <p className="text-slate-400">Creator : {theaterData?.creator_name}</p>
+          <p className="text-slate-400">Created At : {new Date(Number(theaterData?.created_at)).toLocaleString()}</p>
         </div>
 
         <Video />
       </div>
 
       {/* Joined Clients */}
-      <div className="relative row-span-2 bg-neutral-900/60 p-2 rounded-xl">
+      <div className="relative row-span-2 bg-neutral-900/60 p-2 rounded-xl">    
         <Members />
       </div>
-
-      {showInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-neutral-900 border border-neutral-800 shadow-xl p-6 relative">
-
-            {/* Close */}
-            <button
-              onClick={() => setShowInfo(false)}
-              className="absolute top-3 right-3 p-1 rounded hover:bg-neutral-800"
-            >
-              <X size={18} />
-            </button>
-
-            {/* Title */}
-            <h2 className="text-xl font-semibold mb-4">
-              Theater Details
-            </h2>
-
-            {/* Details */}
-            <div className="space-y-3 text-sm text-slate-300">
-              <div>
-                <span className="text-slate-400">Name</span>
-                <p className="text-white">{theaterData?.theater_name}</p>
-              </div>
-
-              <div>
-                <span className="text-slate-400">Theater ID</span>
-                <p className="font-mono text-xs">{theaterData?.theater_id}</p>
-              </div>
-
-              <div>
-                <span className="text-slate-400">Creator</span>
-                <p>{theaterData?.creator_name}</p>
-              </div>
-
-              <div>
-                <span className="text-slate-400">Created At</span>
-                <p>
-                  {new Date(
-                    Number(theaterData?.created_at)
-                  ).toLocaleString()}
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => {
-                  const link = window.location.href;
-
-                  if (navigator.share) {
-                    navigator.share({
-                      title: "Join my Theater",
-                      text: `Join "${theaterData?.theater_name}"`,
-                      url: link,
-                    });
-                  } else {
-                    window.open(
-                      `mailto:?subject=Join my Theater&body=Join using this link: ${link}`,
-                      "_blank"
-                    );
-                  }
-                }}
-                className="
-            flex-1 py-2 rounded-lg
-            bg-indigo-600 hover:bg-blue-500
-            transition
-          "
-              >
-                Invite / Send Link
-              </button>
-
-              <button
-                onClick={() => setShowInfo(false)}
-                className="
-            px-4 py-2 rounded-lg
-            bg-neutral-800 hover:bg-neutral-700
-            transition
-          "
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

@@ -83,7 +83,7 @@ export default function JoinTheater() {
 
   /* ------------------ JOIN ------------------ */
   const joinTheater = () => {
-    navigate(`/theater?type=${theaterData.source_type}&name=${theaterData.theater_name}&id=${theaterData.theater_id}`, {
+    navigate(`/theater?name=${theaterData.theater_name}&id=${theaterData.theater_id}&?type=${theaterData.source_type}`, {
       state: {
         micEnabled,
         speakerEnabled,

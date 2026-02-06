@@ -3,13 +3,11 @@ import { useStates } from "../services/states";
 
 export default function Video() {
 
-  const { send, my_details, members, readyMembers, playRequested, setVideo, currentTime, setCurrentTime, syncing, setSyncing, askPermission, setAskPermission, permissionGranted, setPermissionGranted, requestCurrentTime, setRequestCurrentTime, formatTime, theaterData, setTheaterData } = useStates();
+  const { send, my_details, members, readyMembers, playRequested, setVideo, currentTime, setCurrentTime, syncing, setSyncing, askPermission, setAskPermission, permissionGranted, setPermissionGranted, requestCurrentTime, setRequestCurrentTime, formatTime, theaterData, setTheaterData, host } = useStates();
 
   const videoRef = useRef(null);
   const [dragSeeking, setDragSeeking] = useState(false);
   const [fetchingTime, setFetchingTime] = useState(null);
-
-  const host = window.location.hostname;
 
   async function setVideoFile() {
     if (!theaterData?.theater_id) return;

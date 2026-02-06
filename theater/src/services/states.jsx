@@ -19,6 +19,7 @@ export const StatesProvider = ({ children }) => {
     const [message, setMessage] = useState("");
 
     const [theaterData, setTheaterData] = useState();
+    const host = window.location.hostname;
 
     const my_details = JSON.parse(localStorage.getItem("my_details")) || {
         name: "Tony",
@@ -90,8 +91,6 @@ export const StatesProvider = ({ children }) => {
     };
 
     // ========================================
-
-
     // socket
     const socketRef = useRef(null);
     const listenerRef = useRef(null);
@@ -111,7 +110,6 @@ export const StatesProvider = ({ children }) => {
     }
 
     useEffect(() => {
-        const host = window.location.hostname;
         // loadd theater data
         const params = new URLSearchParams(window.location.search)
         const theater_id = params.get("id")
@@ -275,6 +273,7 @@ export const StatesProvider = ({ children }) => {
 
     // expose everything
     const value = {
+        host,
         myIp, setMyIp,
         my_details,
         theaterData, setTheaterData,

@@ -17,7 +17,7 @@ export function useVoiceRoom() {
         addRemoteUser,
         removeRemoteUser,
         localAudioRef,
-        userType
+        userType, host
     } = useStates();
 
     const deviceRef = useRef(null);
@@ -41,7 +41,6 @@ export function useVoiceRoom() {
     function initSocket() {
         if (socketRef.current) return socketRef.current;
 
-        const host = window.location.hostname;
         socketRef.current = io(`https://${host}:8001`, {
             path: "/voice_room",
             transports: ["websocket"],

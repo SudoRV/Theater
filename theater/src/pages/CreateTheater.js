@@ -10,9 +10,7 @@ export default function UploaderPage() {
   const [theatreName, setTheatreName] = useState("");
   const videoFileRef = useRef(null);
 
-  const { my_details } = useStates();
-
-  const host = window.location.hostname;
+  const { my_details, host } = useStates();
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -32,19 +30,13 @@ export default function UploaderPage() {
   const handleUpload = async () => {
     if (source === "upload" && !file) return;
 
-    let id;
-
     const old_theater_id = localStorage.getItem("theater_id");
-    if (old_theater_id !== null) {
-      id = old_theater_id;
-    } else {
-      id = generateTheatreId();
-      localStorage.setItem("theater_id", id);
-    }
-
+    
+    let id = generateTheatreId();
+    localStorage.setItem("theater_id", id);
     setTheatreId(id);
 
-    setJoinUrl(`${window.location.origin}/join/theater?type=${source}&name=${theatreName}&id=${id}&createdat=${Date.now()}`);
+    setJoinUrl(`${window.location.origin}/join/theater?name=${theatreName}&id=${id}&type=${source}&createdat=${Date.now()}`);
 
     if (source === "upload") {
       if (!file) return alert("Please select a file");
@@ -53,6 +45,7 @@ export default function UploaderPage() {
       formData.append("file", file); // must match multer field
       formData.append("theater_name", theatreName);
       formData.append("source", source);
+      formData.append("old_theater_id", old_theater_id);
       formData.append("theater_id", id);
       formData.append("creator_name", my_details.name)
       formData.append("creator_username", my_details.username)

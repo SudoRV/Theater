@@ -114,13 +114,13 @@ app.post("/get-theater-data", (req, res) => {
         const creator_name = fileData[2];
         const creator_username = fileData[3];
         const creator_email = fileData[4];
-        const theatre_name = fileData[5];
+        const theater_name = fileData[5];
         const source = fileData[6];
         const created_at = fileData[7].split(".")[0];
 
         // console.log(created_at)
 
-        res.json({ success: true, message: "file found for the theater", metadata: { theater_id: theater_id, created_at: created_at, filename: fileData[0] + path.extname(file), file, creator_name, creator_username, creator_email, theatre_name, source } });
+        res.json({ success: true, message: "file found for the theater", metadata: { theater_id: theater_id, created_at: created_at, filename: fileData[0] + path.extname(file), file, creator_name, creator_username, creator_email, theater_name, source } });
       }
     })
   })
@@ -136,7 +136,7 @@ app.post("/theater/upload", uploadVideo.single("file"), async (req, res) => {
   const theaterId = req.body.theater_id;
 
   // delete old videos or expired video of same theater
-  await deleteExpired("./videos", theaterId);
+  await deleteExpired("./videos", req.body.old_theater_id);
 
   const nameWithoutExt = path.parse(req.file.originalname).name;
   const ext = path.extname(req.file.originalname);
