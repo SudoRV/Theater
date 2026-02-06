@@ -22,7 +22,7 @@ const server = http.createServer(app);
 const wsApp = expressWs(app, server)
 
 // create voice room logic
-const voiceRoomServer = http.createServer(options, app);
+const voiceRoomServer = https.createServer(options, app);
 const io = new Server(voiceRoomServer, {
   path: "/voice_room",
   cors: {
