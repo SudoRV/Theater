@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useStates } from "../services/states";
 
@@ -6,9 +6,9 @@ export default function UploaderPage() {
   const [file, setFile] = useState(null);
   const [theatreId, setTheatreId] = useState(null);
   const [joinUrl, setJoinUrl] = useState(null);
-  const [uploadType, setUploadType] = useState("upload");
+  const [source, setSource] = useState("upload");
   const [theatreName, setTheatreName] = useState("");
-  const videoFileRef = useRef(HTMLInputElement);
+  const videoFileRef = useRef(null);
 
   const { my_details } = useStates();
 
@@ -30,20 +30,29 @@ export default function UploaderPage() {
   };
 
   const handleUpload = async () => {
-    if (uploadType === "upload" && !file) return;
+    if (source === "upload" && !file) return;
 
-    const id = generateTheatreId();
+    let id;
+
+    const old_theater_id = localStorage.getItem("theater_id");
+    if (old_theater_id !== null) {
+      id = old_theater_id;
+    } else {
+      id = generateTheatreId();
+      localStorage.setItem("theater_id", id);
+    }
+
     setTheatreId(id);
-    setJoinUrl(`${window.location.origin}/join/theater?type=${uploadType}&name=${theatreName}&id=${id}&createdat=${Date.now()}`);
 
-    // setJoinUrl(`${window.location.origin}/join/theater?type=${uploadType}&name=${theatreName}&id=${id}`);
+    setJoinUrl(`${window.location.origin}/join/theater?type=${source}&name=${theatreName}&id=${id}&createdat=${Date.now()}`);
 
-    if (uploadType === "upload") {
-      console.log("Uploading file:", file);
+    if (source === "upload") {
       if (!file) return alert("Please select a file");
 
       const formData = new FormData();
       formData.append("file", file); // must match multer field
+      formData.append("theater_name", theatreName);
+      formData.append("source", source);
       formData.append("theater_id", id);
       formData.append("creator_name", my_details.name)
       formData.append("creator_username", my_details.username)
@@ -55,25 +64,23 @@ export default function UploaderPage() {
           body: formData
         });
         const result = await response.json();
-        // localStorage.setItem("theater_data", JSON.stringify({upload_type: uploadType, video_file: result.file}));
-        
+
         alert(result.message);
       } catch (err) {
         console.error(err);
         alert("Upload failed");
       }
 
-    } else if (uploadType === "screenshare") {
+    } else if (source === "screenshare") {
       console.log("Screenshare option selected");
-      // localStorage.setItem("theater_data", JSON.stringify({upload_type: uploadType}));
     }
   };
-
+  // bg-gradient-to-b from-gray-900 via-zinc-900 to-black
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-zinc-900 to-black text-gray-100 flex flex-col">
+    <div className="min-h-screen bg-neutral-950 text-gray-100 flex flex-col">
       {/* Navbar */}
       <nav className="bg-black/40 backdrop-blur-md border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">🎭 My Theatre</h1>
+        <h1 className="text-xl font-semibold">Theatre</h1>
         <span className="text-sm text-gray-400">Create and Share Theatres</span>
       </nav>
 
@@ -83,7 +90,7 @@ export default function UploaderPage() {
         transition={{ duration: 0.5 }}
         className="flex flex-1 p-6 gap-6 justify-center items-center"
       >
-        <div className="bg-zinc-800/40 backdrop-blur rounded-2xl shadow-lg p-6 space-y-4 w-full max-w-lg border border-zinc-700">
+        <div className="bg-neutral-800/40 backdrop-blur rounded-2xl shadow-lg p-6 space-y-4 max-w-lg border border-zinc-700">
           <h2 className="text-2xl font-bold text-center text-gray-100">
             Create Your Theatre
           </h2>
@@ -93,8 +100,8 @@ export default function UploaderPage() {
             type="text"
             placeholder="Enter Theatre Name"
             value={theatreName}
-            onChange={(e) => setTheatreName(e.target.value)}
-            className="w-full border border-zinc-600 bg-zinc-900 text-gray-100 placeholder-gray-500 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            onChange={(e) => { setTheatreName(e.target.value) }}
+            className="w-full border border-zinc-600 bg-zinc-900 text-gray-100 placeholder-gray-500 p-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
 
           {/* Upload Type Selection */}
@@ -102,24 +109,23 @@ export default function UploaderPage() {
             {["upload", "host", "screenshare"].map((type) => (
               <button
                 key={type}
-                onClick={() => setUploadType(type)}
-                className={`px-4 py-2 rounded-lg border transition ${uploadType === type
-                  ? "bg-green-600 text-white border-green-500"
+                onClick={() => setSource(type)}
+                className={`px-4 py-2 rounded-lg border transition ${source === type
+                  ? "bg-indigo-600 hover:bg-indigo-700 text-white border-0"
                   : "bg-zinc-700 text-gray-300 border-zinc-600 hover:bg-zinc-600"
                   } 
-                  ${
-                    type==="host" ? "opacity-30" : "opacity-100"
+                  ${(type === "host" || type === "screenshare") ? "opacity-30" : "opacity-100"
                   }
                   `}
 
-                  disabled = { type==="host" ? true : false }
+                disabled={(type === "host" || type === "screenshare") ? true : false}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </button>
             ))}
           </div>
 
-          {(uploadType === "upload" || uploadType === "host") && (
+          {(source === "upload" || source === "host") && (
             <input
               ref={videoFileRef}
               type="file"
@@ -134,10 +140,10 @@ export default function UploaderPage() {
           )}
 
           <button
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-xl hover:bg-green-700 transition"
+            className="w-full text-white py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 transition"
             onClick={handleUpload}
           >
-            {uploadType === "upload"
+            {source === "upload"
               ? "Upload & Create Theatre"
               : "Start Theatre"}
           </button>
@@ -160,7 +166,7 @@ export default function UploaderPage() {
               <div className="flex justify-start gap-4 mt-2">
                 <button
                   onClick={() => navigator.clipboard.writeText(joinUrl)}
-                  className="bg-zinc-700 text-gray-200 py-2 px-4 rounded-lg hover:bg-zinc-600"
+                  className="text-gray-200 py-2 px-4 rounded-lg border border-neutral-700 hover:bg-neutral-800"
                 >
                   Copy Link
                 </button>
@@ -175,19 +181,15 @@ export default function UploaderPage() {
           )}
         </div>
         <div>
-          {(uploadType === "upload" || uploadType === "host") && file && (
+          {(source === "upload" || source === "host") && file && (
             <video
               controls
-              className="max-h-[75vh] rounded-lg border border-zinc-700 mt-4"
+              className="max-w-[590px] rounded-lg border border-zinc-700"
               src={URL.createObjectURL(file)}
             />
           )}
         </div>
       </motion.div>
-
-      <footer className="bg-black/40 backdrop-blur-md border-t border-gray-800 text-gray-400 text-sm text-center py-4">
-        <p>© 2025 My Theatre. Built with React & Tailwind.</p>
-      </footer>
     </div>
   );
 }

@@ -14,11 +14,11 @@ export default function Video() {
   async function setVideoFile() {
     if (!theaterData?.theater_id) return;
 
-    // console.log(theaterData)
-    const uploadType = theaterData.source_type;
+    console.log(theaterData)
+    const source = theaterData.source_type;
     const filename = theaterData.file;
 
-    if (uploadType === "upload") {
+    if (source === "upload") {
       videoRef.current.src = `https://${host}:8000/theater/video?file=${filename}`;
     }
     videoRef.current.load();

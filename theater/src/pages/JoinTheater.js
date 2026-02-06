@@ -101,7 +101,7 @@ export default function JoinTheater() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex justify-center px-4 py-10">
+    <div className="min-h-screen bg-neutral-950 text-white flex justify-center px-4 py-10">
       <div className="w-full max-w-[600px] space-y-8">
 
         {/* -------- THEATER INFO (NO BOX) -------- */}
@@ -123,7 +123,7 @@ export default function JoinTheater() {
         </div>
 
         {/* -------- AUDIO PREVIEW (BOX) -------- */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 shadow-lg m-auto flex flex-col items-center justify-center gap-3 relative">
+        <div className="border border-gray-800 rounded-2xl p-4 shadow-lg m-auto flex flex-col items-center justify-center gap-3 relative">
 
           {/* MIC LEVEL */}
           <div className="w-2 h-full bg-gray-700 rounded absolute -left-6 bottom-0 rotate-180">

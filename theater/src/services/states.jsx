@@ -21,9 +21,9 @@ export const StatesProvider = ({ children }) => {
     const [theaterData, setTheaterData] = useState();
 
     const my_details = JSON.parse(localStorage.getItem("my_details")) || {
-        name: "Rahul Verma",
-        username: "rahul1992verma",
-        email: "rahulverma.1.2005@gmail.com",
+        name: "Tony",
+        username: "tony3000",
+        email: "tony@stark.com",
         gender: "male"
     };
 

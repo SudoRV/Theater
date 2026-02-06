@@ -111,20 +111,23 @@ app.post("/get-theater-data", (req, res) => {
       const filePath = path.join("./videos", file);
       if (fs.statSync(filePath).isFile() && file.includes(theater_id)) {
         const fileData = path.basename(file).split("___");
-        const creator_name = fileData[2]
-        const creator_username = fileData[3]
-        const creator_email = fileData[4]
-        const created_at = fileData[5].split(".")[0];
+        const creator_name = fileData[2];
+        const creator_username = fileData[3];
+        const creator_email = fileData[4];
+        const theatre_name = fileData[5];
+        const source = fileData[6];
+        const created_at = fileData[7].split(".")[0];
 
         // console.log(created_at)
 
-        res.json({ success: true, message: "file found for the theater", metadata: { theater_id: theater_id, created_at: created_at, filename: fileData[0] + path.extname(file), file, creator_name, creator_username, creator_email } });
+        res.json({ success: true, message: "file found for the theater", metadata: { theater_id: theater_id, created_at: created_at, filename: fileData[0] + path.extname(file), file, creator_name, creator_username, creator_email, theatre_name, source } });
       }
     })
   })
 })
 
-app.post("/theater/upload", uploadVideo.single("file"), (req, res) => {
+
+app.post("/theater/upload", uploadVideo.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No file uploaded.");
   }
@@ -132,14 +135,17 @@ app.post("/theater/upload", uploadVideo.single("file"), (req, res) => {
   const oldPath = req.file.path;
   const theaterId = req.body.theater_id;
 
+  // delete old videos or expired video of same theater
+  await deleteExpired("./videos", theaterId);
+
   const nameWithoutExt = path.parse(req.file.originalname).name;
   const ext = path.extname(req.file.originalname);
 
-  const newFilename = `${nameWithoutExt}___${theaterId}___${req.body.creator_name}___${req.body.creator_username}___${req.body.creator_email}___${Date.now()}${ext}`;
+  const newFilename = `${nameWithoutExt}___${theaterId}___${req.body.creator_name}___${req.body.creator_username}___${req.body.creator_email}___${req.body.theater_name}___${req.body.source}___${Date.now()}${ext}`;
   const newPath = path.join(videoUploadFolder, newFilename);
 
   fs.renameSync(oldPath, newPath);
-  res.json({ status: "success", message: `File uploaded successfully: ${newFilename}`, file: newFilename });
+  res.json({ status: "success", message: `File uploaded successfully: ${req.file.originalname}`, file: newFilename });
 })
 
 
@@ -316,6 +322,45 @@ function broadcastExcept(ws, theaterId, data) {
       c.ws.send(str);
     }
   });
+}
+
+async function deleteExpired(dirPath, theaterId) {
+  try {
+    const dirents = await fs.promises.readdir(dirPath, { withFileTypes: true });
+
+    const now = Date.now();
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+
+    // Allowed video extensions
+    const videoExtensions = [".mp4", ".mov", ".avi", ".mkv", ".webm"];
+
+    for (const dirent of dirents) {
+      if (!dirent.isFile()) continue;
+
+      const ext = path.extname(dirent.name).toLowerCase();
+      if (!videoExtensions.includes(ext)) continue; // Only videos
+
+      const fullPath = path.join(dirPath, dirent.name);
+      const parts = dirent.name.split("___");
+
+      if (parts.length < 2) continue;
+
+      const fileTheaterId = parts[1];
+
+      const stats = await fs.promises.stat(fullPath);
+      const modifiedTime = stats.mtime.getTime();
+
+      const isExpired = now - modifiedTime > SIX_HOURS;
+      const isSameTheater = fileTheaterId === theaterId;
+
+      if (isExpired || isSameTheater) {
+        await fs.promises.unlink(fullPath);
+        console.log(`Deleted video: ${dirent.name}`);
+      }
+    }
+  } catch (err) {
+    console.error("deleteExpired error:", err);
+  }
 }
 
 

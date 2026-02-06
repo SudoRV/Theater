@@ -29,8 +29,6 @@ export default function Theater() {
   const [audioGesture, setAudioGesture] = useState(null)
 
   const searchParams = new URLSearchParams(window.location.search);
-  const uploadType = searchParams.get("type");
-  const theaterName = searchParams.get("name");
   const theater_id = searchParams.get("id");
 
   function saveMessages() {
@@ -126,10 +124,10 @@ export default function Theater() {
   // voice room logic
 
   return (
-    <div className="h-full grid grid-cols-4 grid-rows-[1fr_auto_auto] gap-2 p-2 text-white overflow-hidden     bg-gradient-to-b from-gray-900 via-zinc-900 to-black">
+    <div className="h-full grid grid-cols-4 grid-rows-[1fr_auto_auto]  gap-2 p-2 text-white overflow-hidden bg-neutral-950">
 
       {/* Chat Section */}
-      <div className={`${chatOpen ? "block col-span-4" : "hidden"} md:col-span-1 md:block row-span-1 flex flex-col bg-gray-900/60 rounded-xl h-full overflow-hidden`}>
+      <div className={`${chatOpen ? "block col-span-4" : "hidden"} md:col-span-1 md:block row-span-1 flex flex-col bg-neutral-900/60 rounded-xl h-full overflow-hidden`}>
         <div className="flex flex-col flex-1 p-2 h-full overflow-hidden">
           {/* Messages */}
           <div id="audio-temp" className="flex-1 overflow-y-auto mb-2 space-y-2 flex-grow">
@@ -159,12 +157,12 @@ export default function Theater() {
           <div className="w-full flex gap-2">
             <input
               type="text"
-              className="w-[65%] p-2 rounded bg-gray-700 text-white focus:outline-none"
+              className="flex-1 p-2 px-3 text-sm rounded-lg bg-neutral-950 border border-neutral-800 text-white focus:outline-none"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type a message..."
             />
-            <button onClick={handleSend} className="flex-grow flex items-center gap-1 px-3 py-2 bg-blue-600 rounded hover:bg-blue-500">
+            <button onClick={handleSend} className="flex-grow flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 rounded hover:bg-blue-500 max-w-[100px] text-sm">
               <Send size={16} /> Send
             </button>
           </div>
@@ -172,7 +170,7 @@ export default function Theater() {
       </div>
 
       {/* Permission display */}
-      <div ref={permissionRef} className="row-start-2 col-span-1 flex items-center justify-between bg-gray-900/60 text-white p-2 rounded-xl gap-2 max-h-20 relative">
+      <div ref={permissionRef} className="row-start-2 col-span-1 flex items-center justify-between bg-neutral-900/60 text-white p-2 rounded-xl gap-2 max-h-20 relative">
 
         {/* Arrow above container */}
         {triggerArrow && (
@@ -182,7 +180,7 @@ export default function Theater() {
         )}
 
         {/* Message */}
-        <span className="text-[12px] rounded-lg bg-gray-900/60 p-2 flex-grow overflow-y-auto max-h-14 border border-gray-700 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+        <span className="text-[12px] rounded-lg bg-neutral-900/60 p-2 flex-grow overflow-y-auto max-h-14 border border-gray-700 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
           {askPermission || "Command"}
         </span>
 
@@ -204,11 +202,11 @@ export default function Theater() {
       </div>
 
       {/* Controls Section */}
-      <div className="row-start-3 col-span-1 p-4 rounded-xl bg-gray-900/60 flex h-full">
-        <div className="w-full flex gap-4 h-full justify-evenly">
+      <div className="row-start-3 col-span-1 p-2.5 py-4 rounded-xl bg-neutral-900/60 flex h-full">
+        <div className="w-full flex gap-4 h-full justify-between">
           <button
             onClick={makeMeReady}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${ready ? "bg-green-600 hover:bg-green-500" : "bg-red-600 hover:bg-red-500"}`}
+            className={`w-full flex justify-center items-center px-4 py-2 rounded-lg flex items-center gap-2 ${ready ? "bg-green-600 hover:bg-green-500" : "bg-red-600 hover:bg-red-500"}`}
           >
             {ready ? <CheckCircle size={24} /> : <XCircle size={24} />}
           </button>
@@ -218,7 +216,7 @@ export default function Theater() {
               setMicOn(!micOn);
               toggleMic(!micOn);
             }}
-            className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-600 flex items-center gap-2"
+            className="w-full flex justify-center items-center px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-600 flex items-center gap-2"
           >
             {micOn ? <Mic size={24} /> : <MicOff size={24} />}
           </button>
@@ -231,7 +229,7 @@ export default function Theater() {
                 !speakerOn ? audio.play() : audio.pause();
               })
             }}
-            className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-600 flex items-center gap-2"
+            className="w-full flex justify-center items-center px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-600 flex items-center gap-2"
           >
             {speakerOn ? <Volume2 size={24} /> : <VolumeX size={24} />}
           </button>
@@ -240,7 +238,7 @@ export default function Theater() {
       </div>
 
       {/* Video Section */}
-      <div className="col-span-4 md:col-span-3 row-span-1 flex flex-col items-center justify-center bg-gray-900/90 rounded-xl relative p-2 overflow-hidden">
+      <div className="col-span-4 md:col-span-3 row-span-1 flex flex-col items-center justify-center bg-neutral-900/60 rounded-xl relative p-2 overflow-hidden">
 
         <div className="w-full pb-2 px-2 flex gap-3">
           <p>Theater : {theaterData?.theater_name}</p>
@@ -253,7 +251,7 @@ export default function Theater() {
       </div>
 
       {/* Joined Clients */}
-      <div className="relative col-span-4 md:col-span-3 row-span-2 bg-gray-900/60 p-2 rounded-xl">    
+      <div className="relative col-span-4 md:col-span-3 row-span-2 bg-neutral-900/60 p-2 rounded-xl">    
         <Members />
       </div>
 

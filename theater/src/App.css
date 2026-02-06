@@ -3,3 +3,12 @@ html,body,#root {
   height: 100%;
   margin: 0;
 }
+
+::-webkit-scrollbar{
+  background-color: #222;
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb{
+  background-color: #333;
+}
