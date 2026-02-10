@@ -11,10 +11,10 @@ const { createWorker } = require("./voice_room/mediasoup.js");
 const { socketHandler } = require("./voice_room/sfu");
 
 
-const options = {
-  key: fs.readFileSync(path.join(__dirname, 'localhost-key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'localhost-cert.pem')),
-};
+// const options = {
+//   key: fs.readFileSync(path.join(__dirname, 'localhost-key.pem')),
+//   cert: fs.readFileSync(path.join(__dirname, 'localhost-cert.pem')),
+// };
 
 const port = 8000;
 const app = express();
@@ -22,7 +22,7 @@ const server = http.createServer(app);
 const wsApp = expressWs(app, server)
 
 // create voice room logic
-const voiceRoomServer = https.createServer(options, app);
+const voiceRoomServer = http.createServer(app);
 const io = new Server(voiceRoomServer, {
   path: "/voice_room",
   cors: {
@@ -39,7 +39,6 @@ VoiceRoom();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json())
-app.use(express.static(path.join(__dirname, "static")))
 app.use(cors());
 
 
@@ -97,7 +96,7 @@ app.post("/get-theater-data", (req, res) => {
 
   fs.readdir("./videos", (err, files) => {
     if (err) {
-      console.log("Error reading folder: ", err);
+      // console.log("Error reading folder: ", err);
       res.json({ success: false, message: "No file found for the theater" });
       return;
     }
@@ -164,13 +163,13 @@ app.ws("/controls", (ws, req) => {
   const theaterId = req.query.theaterId; // ?theaterId=abc123
 
   if (!theaterId) {
-    console.log("no theater id found")
+    // console.log("no theater id found")
     ws.close(1008, "theaterId required");
     return;
   }
 
   ws.theaterId = theaterId;
-  console.log(ip, "connected to theater:", theaterId);
+  // console.log(ip, "connected to theater:", theaterId);
 
   const theater = getTheater(theaterId);
 
@@ -260,7 +259,7 @@ function handleDisconnect(ws) {
   const theater = theaters.get(theaterId);
   if (!theater) return;
 
-  console.log("client disconnected from", theaterId);
+  // console.log("client disconnected from", theaterId);
 
   const client = [...theater.clients].find(c => c.ws === ws);
   if (!client) return;
@@ -345,7 +344,7 @@ async function deleteExpired(dirPath, theaterId) {
 
       if (isExpired || isSameTheater) {
         await fs.promises.unlink(fullPath);
-        console.log(`Deleted video: ${dirent.name}`);
+        // console.log(`Deleted video: ${dirent.name}`);
       }
     }
   } catch (err) {
@@ -353,6 +352,12 @@ async function deleteExpired(dirPath, theaterId) {
   }
 }
 
+
+app.use(express.static(path.join(__dirname, "build")));
+
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
 
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);

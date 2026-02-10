@@ -108,7 +108,7 @@ function socketHandler(io) {
 
       peer.transports[transport.id] = transport;
 
-      console.log(direction)
+      // console.log(direction)
       socket.emit("transportCreated", {
         direction,
         transportOptions: {

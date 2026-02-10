@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion";
 import { useStates } from "../services/states";
 
 export default function UploaderPage() {
@@ -77,10 +77,10 @@ export default function UploaderPage() {
         <span className="text-sm text-gray-400">Create and Share Theatres</span>
       </nav>
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <div
+        // initial={{ opacity: 0, y: 30 }}
+        // animate={{ opacity: 1, y: 0 }}
+        // transition={{ duration: 0.5 }}
         className="flex flex-1 p-6 gap-6 justify-center items-center"
       >
         <div className="bg-neutral-800/40 backdrop-blur rounded-2xl shadow-lg p-6 space-y-4 max-w-lg border border-zinc-700">
@@ -182,7 +182,7 @@ export default function UploaderPage() {
             />
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -25,7 +25,7 @@ export const NotificationProvider = ({ children }) => {
                 {notifications.map(({ id, title, message, type }) => (
                     <div
                         key={id}
-                        className={`px-4 py-3 rounded shadow text-white animate-slide-in max-w-xs break-words bg-black bg-opacity-40 backdrop-blur-sm rounded-lg text-sm ${
+                        className={`px-4 py-3 rounded shadow text-white animate-slide-in max-w-xs break-words bg-neutral-900/80 backdrop-blur-sm rounded-lg text-sm ${
                             type === 'success' ? 'border border-indigo-600' :
                             type === 'error' ? 'border border-red-500' :
                             'border border-blue-500'
