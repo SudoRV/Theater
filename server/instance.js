@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require("path");
 const multer = require("multer");
 const cors = require("cors");
-const http = require("http");
+const https = require("https");
 
 const { Server } = require("socket.io");
 const { createWorker } = require("./voice_room/mediasoup.js");
@@ -18,11 +18,11 @@ const { socketHandler } = require("./voice_room/sfu");
 
 const port = 8000;
 const app = express();
-const server = http.createServer(app);
+const server = https.createServer(app);
 const wsApp = expressWs(app, server)
 
 // create voice room logic
-const voiceRoomServer = http.createServer(app);
+const voiceRoomServer = https.createServer(app);
 const io = new Server(voiceRoomServer, {
   path: "/voice_room",
   cors: {
