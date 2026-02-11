@@ -353,10 +353,10 @@ async function deleteExpired(dirPath, theaterId) {
 }
 
 
-app.use(express.static(path.join(__dirname, "build")));
+app.use(express.static(path.join(__dirname, "../theater/build")));
 
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
+  res.sendFile(path.join(__dirname, "../theater/build", "index.html"));
 });
 
 server.listen(port, () => {

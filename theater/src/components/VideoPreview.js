@@ -29,7 +29,7 @@ export default function VideoPreview({ theaterData }) {
     <video
       ref={videoRef}
       className="w-full rounded-xl"
-      src={`http://${window.location.hostname}:8000/theater/video?file=${theaterData.file}`}
+      src={`/theater/video?file=${theaterData.file}`}
       controls
       playsInline
     />
