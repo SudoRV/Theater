@@ -52,7 +52,7 @@ export default function UploaderPage() {
       formData.append("creator_email", my_details.email)
 
       try {
-        const response = await fetch(`http://${host}:8000/theater/upload`, {
+        const response = await fetch(`/theater/upload`, {
           method: "POST",
           body: formData
         });

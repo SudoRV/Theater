@@ -62,7 +62,7 @@ const Home = () => {
     setJoining(true);
 
     try {
-      const res = await fetch(`http://${host}:8000/get-theater-data`, {
+      const res = await fetch(`/get-theater-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ theater_id: theaterId }),

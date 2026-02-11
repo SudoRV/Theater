@@ -96,7 +96,7 @@ export const StatesProvider = ({ children }) => {
     const listenerRef = useRef(null);
 
     async function setTheaterDataFunc(host, params, theater_id) {
-        const response = await fetch(`http://${host}:8000/get-theater-data`, {
+        const response = await fetch(`/get-theater-data`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

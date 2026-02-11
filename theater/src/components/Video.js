@@ -16,7 +16,7 @@ export default function Video() {
     const filename = theaterData.file;
 
     if (source === "upload") {
-      videoRef.current.src = `http://${host}:8000/theater/video?file=${filename}`;
+      videoRef.current.src = `/theater/video?file=${filename}`;
     }
     videoRef.current.load();
   }
@@ -162,7 +162,7 @@ export default function Video() {
 
   return (
     <video ref={videoRef} style={{ height: "100%" }} className="flex-grow rounded-lg bg-black" controls>
-      <source src={`http://${host}:8000/theater/video`} type="video/mp4" />
+      <source src={`/theater/video`} type="video/mp4" />
     </video>
   )
 }
