@@ -125,7 +125,7 @@ export default function Theater() {
   // voice room logic
 
   return (
-    <div className="h-full grid grid-cols-[320px_1fr] grid-rows-[1fr_auto_auto] gap-2 p-2 text-white overflow-hidden bg-neutral-950">
+    <div className="h-full w-fit grid grid-cols-[320px_1fr] grid-rows-[1fr_auto_auto] gap-2 p-2 text-white bg-neutral-950">
 
       <button
         onClick={() => setChatOpen(!chatOpen)}

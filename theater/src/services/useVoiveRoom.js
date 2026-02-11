@@ -43,7 +43,7 @@ export function useVoiceRoom() {
         
         console.log(`${window.location.protocol}//${window.location.host}`)
 
-        socketRef.current = io(`${window.location.protocol}//${window.location.hostname}:8080`, {
+        socketRef.current = io(`${window.location.protocol}//${window.location.host}`, {
             path: "/voice_room",
             transports: ["websocket"],
             autoConnect: false,
