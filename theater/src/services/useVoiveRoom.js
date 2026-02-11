@@ -41,7 +41,7 @@ export function useVoiceRoom() {
     function initSocket() {
         if (socketRef.current) return socketRef.current;
 
-        socketRef.current = io(`https://${host}:8001`, {
+        socketRef.current = io(`${window.location.protocol}//${window.location.host}:8080`, {
             path: "/voice_room",
             transports: ["websocket"],
             autoConnect: false,
