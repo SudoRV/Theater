@@ -68,7 +68,7 @@ export function useVoiceRoom() {
         };
         socket.connect();
         socket.on("connect", () => {
-            // console.log("[1] Voice Socket connected");
+            console.log("[1] Voice Socket connected");
 
             socket.emit("joinRoom", {
                 roomId,
@@ -77,7 +77,7 @@ export function useVoiceRoom() {
                 email,
             });
 
-            // console.log("[2] Joined room");
+            console.log("[2] Joined room");
         });
 
         // consume existing producers
