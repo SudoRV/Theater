@@ -19,6 +19,8 @@ export default function Theater() {
   const [ready, setReady] = useState(false);
   const [micOn, setMicOn] = useState(micEnabled || false);
   const [speakerOn, setSpeakerOn] = useState(speakerEnabled || false);
+  const [userMicInteracted, setUserMicInteracted] = useState(false);
+  
   const [triggerArrow, setTriggerArrow] = useState(null);
   const permissionRef = useRef(null);
 
@@ -51,12 +53,6 @@ export default function Theater() {
       window.localStorage.removeItem("messages");
     } else {
       setMessages(loaded_messages.messages)
-    }
-
-    if (socketConnectedRef.current === false) {
-      console.log('connecting to voice room socket')
-      connectSocket({ name: my_details.name, email: my_details.email, roomId: theaterData.theater_id, micEnabled, speakerEnabled })
-      socketConnectedRef.current = true;
     }
   }, [my_details?.email, theaterData?.theater_id])
 
@@ -125,7 +121,27 @@ export default function Theater() {
   // voice room logic
 
   return (
-    <div className="h-full w-fit grid grid-cols-[320px_1fr] grid-rows-[1fr_auto_auto] gap-2 p-2 text-white bg-neutral-950">
+    <div className="h-full w-full grid grid-cols-[320px_1fr] grid-rows-[1fr_auto_auto] gap-2 p-2 text-white bg-neutral-950">
+
+      {
+        userMicInteracted === false && (
+          <div className="absolute w-full h-full bg-neutral-800/15 backdrop-blur-sm top-0 left-0 flex justify-center items-center z-10">
+            <div className="w-[20rem] h-[8rem] flex flex-col justify-center items-center p-6 bg-neutral-900/40 border border-neutral-800 rounded-md">
+              <p className="text-xl mb-8 w-fit">Allow Mic !</p>
+              <div className="flex gap-3 ml-auto">
+                <button className="bg-neutral-900 border border-neutral-800 rounded-md p-1 px-5 transition-background duration-300 hover:bg-neutral-950">No</button>
+                <button onClick={() => {
+                  if (socketConnectedRef.current === false) {           
+                    connectSocket({ name: my_details?.name, email: my_details?.email, roomId: theaterData?.theater_id, micEnabled, speakerEnabled });
+                    socketConnectedRef.current = true;
+                    setUserMicInteracted(true);
+                  }
+                }} className="bg-blue-500 border-0 rounded-md p-1 px-5 transition-background duration-300 hover:bg-blue-600">Yes</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       <button
         onClick={() => setChatOpen(!chatOpen)}
@@ -202,7 +218,7 @@ export default function Theater() {
                 overflow-y-auto
               "
             />
-            
+
             <button onClick={handleSend} className="flex-grow flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 transition-background duration-300 rounded hover:bg-blue-500 max-w-[80px] h-10 text-sm">
               <Send size={16} /> Send
             </button>

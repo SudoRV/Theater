@@ -41,9 +41,9 @@ export function useVoiceRoom() {
     function initSocket() {
         if (socketRef.current) return socketRef.current;
         
-        console.log(`${window.location.protocol}//${window.location.host}`)
+        console.log(`${window.location.protocol}//${window.location.hostname}`)
 
-        socketRef.current = io(`${window.location.protocol}//${window.location.host}`, {
+        socketRef.current = io(`${window.location.protocol}//${window.location.hostname}:8080`, {
             path: "/voice_room",
             transports: ["websocket"],
             autoConnect: false,
@@ -57,6 +57,7 @@ export function useVoiceRoom() {
        CONNECT + JOIN
     ================================ */
     function connectSocket({ name, email, roomId, micEnabled, speakerEnabled, onRemoteUser }) {
+        console.log('connecting to voice room socket')
         const socket = initSocket();
 
         userRef.current = {
