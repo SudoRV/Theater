@@ -40,15 +40,8 @@ export function useVoiceRoom() {
     ================================ */
     function initSocket() {
         if (socketRef.current) return socketRef.current;
-        
-        console.log(`${window.location.protocol}//${window.location.hostname}`)
 
-        socketRef.current = io(`${window.location.protocol}//${window.location.hostname}:8080`, {
-            path: "/voice_room",
-            transports: ["websocket"],
-            autoConnect: false,
-            secure: true,
-        });
+        socketRef.current = io("/voice_room");
 
         return socketRef.current;
     }

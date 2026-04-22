@@ -1,5 +1,4 @@
 const express = require('express');
-const expressWs = require('express-ws');
 const fs = require('fs');
 const path = require("path");
 const multer = require("multer");
@@ -19,20 +18,19 @@ const { socketHandler } = require("./voice_room/sfu");
 const port = 8000;
 const app = express();
 const server = http.createServer(app);
-const wsApp = expressWs(app, server)
 
-// create voice room logic
-const voiceRoomServer = http.createServer(app);
-const io = new Server(voiceRoomServer, {
-  path: "/voice_room",
+const io = new Server(server, {
   cors: {
     origin: "*",
   },
 });
 
+const voiceNamespace = io.of("/voice_room");
+const controlsNamespace = io.of("/controls");
+
 async function VoiceRoom() {
   await createWorker();
-  socketHandler(io);
+  socketHandler(voiceNamespace);
 }
 
 VoiceRoom();
@@ -158,35 +156,26 @@ function getTheater(theaterId) {
 }
 
 
-app.ws("/controls", (ws, req) => {
-  const ip = req.connection.remoteAddress;
-  const theaterId = req.query.theaterId; // ?theaterId=abc123
+controlsNamespace.on("connection", (socket) => {
+  const theaterId = socket.handshake.query.theaterId;
 
   if (!theaterId) {
-    // console.log("no theater id found")
-    ws.close(1008, "theaterId required");
+    socket.disconnect(true);
     return;
   }
 
-  ws.theaterId = theaterId;
-  // console.log(ip, "connected to theater:", theaterId);
+  socket.theaterId = theaterId;
 
   const theater = getTheater(theaterId);
 
-  ws.on("message", (message) => {
-    let data;
-    try {
-      data = JSON.parse(message.toString());
-    } catch {
-      console.error("Invalid JSON received");
-      return;
-    }
+  socket.on("message", (data) => {
+    if (!data) return;
 
     if (data.code === 23) {
       const user = data.payload.user_details;
 
       theater.members.add(user);
-      theater.clients.add({ ws, email: user.email });
+      theater.clients.add({ socket, email: user.email });
 
       broadcast(theaterId, {
         command: "new user joined",
@@ -220,12 +209,13 @@ app.ws("/controls", (ws, req) => {
     }
 
     else {
-      handleMessage(ws, data);
+      handleMessage(socket, data);
     }
   });
 
-  ws.on("close", () => handleDisconnect(ws));
-  ws.on("error", (err) => console.error("WS error:", err));
+  socket.on("disconnect", () => {
+    handleDisconnect(socket);
+  });
 });
 
 
@@ -254,20 +244,21 @@ function handleMessage(ws, data) {
 }
 
 
-function handleDisconnect(ws) {
-  const theaterId = ws.theaterId;
+function handleDisconnect(socket) {
+  const theaterId = socket.theaterId;
   const theater = theaters.get(theaterId);
   if (!theater) return;
 
-  // console.log("client disconnected from", theaterId);
+  const client = [...theater.clients]
+    .find(c => c.socket.id === socket.id);
 
-  const client = [...theater.clients].find(c => c.ws === ws);
   if (!client) return;
 
   theater.clients.delete(client);
 
   const member = [...theater.members]
     .find(m => m.email === client.email);
+
   const ready = [...theater.readyMembers]
     .find(r => r.email === client.email);
 
@@ -284,7 +275,6 @@ function handleDisconnect(ws) {
     },
   });
 
-  // cleanup empty theater
   if (theater.clients.size === 0) {
     theaters.delete(theaterId);
   }
@@ -295,20 +285,18 @@ function broadcast(theaterId, data) {
   const theater = theaters.get(theaterId);
   if (!theater) return;
 
-  const str = JSON.stringify(data);
   theater.clients.forEach(c => {
-    if (c.ws.readyState === 1) c.ws.send(str);
+    c.socket.emit("message", data);
   });
 }
 
-function broadcastExcept(ws, theaterId, data) {
+function broadcastExcept(socket, theaterId, data) {
   const theater = theaters.get(theaterId);
   if (!theater) return;
 
-  const str = JSON.stringify(data);
   theater.clients.forEach(c => {
-    if (c.ws !== ws && c.ws.readyState === 1) {
-      c.ws.send(str);
+    if (c.socket.id !== socket.id) {
+      c.socket.emit("message", data);
     }
   });
 }
@@ -363,6 +351,6 @@ server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-voiceRoomServer.listen(8080, () => {
-  console.log(`voice room server is running on port ${port}`);
-})
+// voiceRoomServer.listen(8080, () => {
+//   console.log(`voice room server is running on port ${port}`);
+// })

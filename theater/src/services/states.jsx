@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
 
 const StatesContext = createContext();
 
@@ -110,144 +111,131 @@ export const StatesProvider = ({ children }) => {
     }
 
     useEffect(() => {
-        // loadd theater data
-        const params = new URLSearchParams(window.location.search)
-        const theater_id = params.get("id")
+        const params = new URLSearchParams(window.location.search);
+        const theater_id = params.get("id");
 
         setTheaterDataFunc(host, params, theater_id);
 
-        // connect to socket controls
-        const socketUrl = `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/controls?theaterId=${params.get("id")}`;
+        if (!socketRef.current) {
 
-        if (!socketRef.current || socketRef.current.readyState === WebSocket.CLOSED) {
-            socketRef.current = new WebSocket(socketUrl);
+            socketRef.current = io("/controls", {
+                query: { theaterId: theater_id },
+            });
 
-            socketRef.current.addEventListener("open", () => {
+            const socket = socketRef.current;
+
+            socket.on("connect", () => {
                 console.log("Connected to server controls");
 
-                // send server user details
-                const send_my_details = {
+                // send user details
+                socket.emit("message", {
                     code: 23,
                     command: "set user details",
-                    username: "rahul1992verma",
+                    username: my_details.username,
                     user_details: my_details,
                     payload: { user_details: my_details }
-                };
-                sendMsg(send_my_details);
+                });
 
                 // fetch current time
-                const get_current_time = {
+                socket.emit("message", {
                     code: 32,
                     command: "fetch current time",
-                    username: "rahul1992verma",
+                    username: my_details.username,
                     user: my_details,
                     send_type: "all-except-me"
-                }
-                sendMsg(get_current_time);
-            })
+                });
+            });
 
-            socketRef.current.addEventListener("message", (event) => {
-                const data = JSON.parse(event.data);
-                // console.log(data);
-
+            socket.on("message", (data) => {
                 switch (data.code) {
-                    case 24: //user joined broadcast from server
-                        setMembers(data?.payload?.members.map(m => ({...m, mic: true})));
+
+                    case 24:
+                        setMembers(data.payload.members.map(m => ({ ...m, mic: true })));
                         setReadyMembers(data.payload.ready_members);
-                        setMembers(prevMembers =>
-                            prevMembers.map(m => ({
+                        setMembers(prev =>
+                            prev.map(m => ({
                                 ...m,
-                                ready: data.payload.ready_members.some(r => r.email === m.email) // if emails match, mark ready
+                                ready: data.payload.ready_members.some(r => r.email === m.email)
                             }))
                         );
                         break;
 
-                    case 25: // user left broadcast
+                    case 25:
                         setMembers(data.payload.members);
                         setReadyMembers(data.payload.ready_members);
-                        setMembers(prevMembers =>
-                            prevMembers.map(m => ({
-                                ...m,
-                                ready: data.payload.ready_members.some(r => r.email === m.email) // if emails match, mark ready
-                            }))
-                        );
                         break;
 
-                    case 27: // user ready from server when someone makes it ready
+                    case 27:
                         setReadyMembers(data.payload.ready_members);
-                        setMembers(prevMembers =>
-                            prevMembers.map(m => ({
-                                ...m,
-                                ready: data.payload.ready_members.some(r => r.email === m.email) // if emails match, mark ready
-                            }))
-                        );
                         break;
 
-                    case 28: // user plays
+                    case 28:
                         if (readyMembers.length === members.length) {
                             setPlayRequested(true);
                         }
                         break;
 
-                    case 29: // user pause
+                    case 29:
                         if (readyMembers.length === members.length) {
                             setPlayRequested(false);
                         }
                         break;
 
-                    case 30: // user seeking from server side braodcast
+                    case 30:
                         setSyncing(true);
                         setCurrentTime(data.payload.current_time);
-                        setAskPermission(`${data.user.name} want to seek video to: ${formatTime(data.payload.current_time)}`)
+                        setAskPermission(
+                            `${data.user.name} want to seek video to: ${formatTime(data.payload.current_time)}`
+                        );
                         break;
 
-                    case 31: // user seeking end from server side braodcast
+                    case 31:
                         setSyncing(false);
                         break;
 
-                    case 32: //set request current time flag high
+                    case 32:
                         setRequestCurrentTime(data.user.email);
                         break;
 
-                    case 33: //get current time from already joined members         
+                    case 33:
                         setRequestCurrentTime(data.payload.current_time);
                         break;
 
-                    case 34: //receive message from users        
-                        setMessage({ name: data.user.name, email: data.user.email, message: data.payload.message });
+                    case 34:
+                        setMessage({
+                            name: data.user.name,
+                            email: data.user.email,
+                            message: data.payload.message
+                        });
                         break;
 
                     default:
-                        console.log("default", data);
+                        console.log("Unhandled:", data);
                         break;
                 }
-            })
+            });
 
-            socketRef.current.addEventListener("close", () => console.log("Disconnected from server data"));
-            socketRef.current.addEventListener("error", (err) => console.error("WebSocket error:", err));
+            socket.on("disconnect", () => {
+                console.log("Disconnected from server");
+            });
 
-
-            // return () => {
-            //     // Cleanup listeners
-            //     // socketRef.cuurent.removeEventListener("open", handleOpen);
-            //     // socket.removeEventListener("message", handleMessage);
-            //     // socket.removeEventListener("close", handleClose);
-            //     // socket.removeEventListener("error", handleError);
-
-            //     // Close the socket
-            //     if (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING) {
-            //         socketRef.current.close();
-            //     }
-            // };
+            socket.on("connect_error", (err) => {
+                console.error("Socket error:", err);
+            });
         }
-    }, [])
+
+        return () => {
+            socketRef.current?.disconnect();
+        };
+
+    }, []);
 
     // helper to send messages
     const sendMsg = (msg) => {
-        if (socketRef.current?.readyState === WebSocket.OPEN) {
-            socketRef.current.send(JSON.stringify(msg));
+        if (socketRef.current?.connected) {
+            socketRef.current.emit("message", msg);
         } else {
-            console.error("not connected to server");
+            console.log("Socket not connected yet");
         }
     };
 
